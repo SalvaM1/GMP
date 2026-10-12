@@ -1,0 +1,16 @@
+{
+  "template": "dynamic",
+  "mapeo_diapositiva_layout": {
+    "1": "cover_title_left_image_right_8271",
+    "2": "left_title_right_text_sections_3504",
+    "3": "title_stepped_cards_1046",
+    "4": "center_title_cards_2592",
+    "5": "center_title_metric_cards_3569",
+    "6": "title_metric_callouts_2098",
+    "7": "left_title_right_chart_panel_1475",
+    "8": "left_title_right_text_sections_3504",
+    "9": "title_donut_chart_right_table_1700",
+    "10": "image_comparison_panels_4102",
+    "11": "closing_title_description_1992"
+  }
+}

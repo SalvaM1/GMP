@@ -1,0 +1,3 @@
+# Salidas de Presenton (Docker monta ./app_data)
+app_data/
+presenton/respuesta.json

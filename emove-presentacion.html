@@ -1,0 +1,1232 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>E-MOVE · TPI UTN FRC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#091322;
+  --ink:#e9eef7;
+  --muted:#97a6bf;
+  --faint:#62728d;
+  --rule:rgba(150,178,220,.16);
+  --free:#35e0c2;
+  --use:#4f8cff;
+  --low:#ff8f3a;
+  --chg:#b3bccb;
+  --heat:#ff5ca8;
+  --zone:#d4e0ff;
+  --f-display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --f-text:'Instrument Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  --pw:min(37rem,46vw);
+}
+html{font-size:clamp(12px,min(1.12vw,2vh),26px)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden}
+body{font-family:var(--f-text);font-size:1rem;line-height:1.45;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+canvas#map{position:fixed;inset:0;width:100%;height:100%;display:block}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--free);outline-offset:3px;border-radius:4px}
+
+/* ---------- Panel ---------- */
+#panel{
+  position:fixed;left:0;top:0;bottom:0;width:var(--pw);
+  display:flex;flex-direction:column;
+  padding:2.6rem 2.8rem 0 3.2rem;
+  background:linear-gradient(90deg,rgba(6,11,22,.95) 0%,rgba(6,11,22,.9) 70%,rgba(6,11,22,.78) 100%);
+  border-right:1px solid var(--rule);
+  transition:transform .55s cubic-bezier(.3,.7,.2,1);
+  z-index:5;
+}
+#panel::after{ /* soft edge into the map */
+  content:"";position:absolute;top:0;bottom:0;left:100%;width:3.5rem;pointer-events:none;
+  background:linear-gradient(90deg,rgba(6,11,22,.55),rgba(6,11,22,0));
+}
+body.nopanel #panel{transform:translateX(calc(-100% - 4rem))}
+.slides{position:relative;flex:1;min-height:0}
+.slide{
+  position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+  visibility:hidden;opacity:0;transition:opacity .3s ease,visibility 0s linear .3s;
+  padding-bottom:1rem;
+}
+.slide.active{visibility:visible;opacity:1;transition:opacity .3s ease}
+.slide.active .rv{animation:rise .75s cubic-bezier(.2,.75,.25,1) both;animation-delay:calc(var(--i,0) * 80ms + 60ms)}
+@keyframes rise{from{opacity:0;transform:translateY(1rem)}to{opacity:1;transform:none}}
+.speaker{display:none}
+
+h1,h2,h3{font-family:var(--f-display);margin:0;font-weight:700}
+h2{font-size:2.5rem;line-height:1.04;letter-spacing:-.022em;margin-bottom:1.3rem;text-wrap:balance}
+h3{font-size:1.18rem;letter-spacing:-.01em;line-height:1.2}
+p{margin:0}
+.lead{font-size:1.14rem;color:var(--ink);max-width:31em;margin-bottom:1.3rem;text-wrap:pretty}
+.small{font-size:.86rem;color:var(--muted)}
+.mono{font-family:var(--f-mono)}
+
+/* cover */
+.brand{font-size:7.4rem;font-weight:800;letter-spacing:-.045em;line-height:.88;display:flex;align-items:center;gap:.06em}
+.brand .dash{display:inline-block;width:.62em;height:.13em;border-radius:1em;position:relative;overflow:hidden;
+  background:linear-gradient(90deg,rgba(53,224,194,0),rgba(53,224,194,.55) 55%,var(--free));margin:0 .02em;transform:translateY(.04em)}
+.brand .dash::after{content:"";position:absolute;right:0;top:50%;width:.16em;height:.16em;border-radius:50%;background:#fff;transform:translate(10%,-50%);box-shadow:0 0 .3em var(--free)}
+.cover .sub{font-family:var(--f-display);font-weight:400;font-size:1.85rem;line-height:1.15;letter-spacing:-.01em;margin-top:1.6rem;max-width:15em;color:var(--ink)}
+.cover .meta{font-family:var(--f-mono);font-size:1rem;color:var(--free);margin-top:1.8rem}
+.cover .hint{margin-top:3.2rem;font-size:.82rem;color:var(--faint)}
+.thanks{font-size:6.6rem;font-weight:800;letter-spacing:-.045em;line-height:.9}
+.ask{font-family:var(--f-display);font-size:2.6rem;font-weight:400;color:var(--free);margin-top:1rem;letter-spacing:-.02em}
+
+/* problem */
+.stat{display:flex;align-items:baseline;gap:1rem;margin:0 0 1.5rem;padding-bottom:1.2rem;border-bottom:1px solid var(--rule)}
+.stat .num{font-family:var(--f-display);font-size:3.2rem;font-weight:700;color:var(--ink);white-space:nowrap;letter-spacing:-.03em;line-height:1}
+.stat .lbl{color:var(--muted);font-size:.98rem;max-width:16em;line-height:1.3}
+.plist{list-style:none;margin:0;padding:0;display:grid;gap:1.05rem}
+.plist li{padding-left:1.25rem;position:relative}
+.plist li::before{content:"";position:absolute;left:0;top:.62em;width:.45rem;height:2px;background:var(--low)}
+.plist b{font-weight:600;display:block;font-size:1.06rem}
+.plist span{color:var(--muted)}
+
+/* steps */
+.steps{list-style:none;margin:0;padding:0;position:relative;display:grid;gap:1.25rem}
+.steps li:not(:last-child)::before{content:"";position:absolute;left:calc(1.15rem - 1px);top:2.3rem;bottom:-1.25rem;width:2px;background:linear-gradient(var(--free),var(--use));opacity:.6}
+.steps li{display:grid;grid-template-columns:2.3rem 1fr;gap:1.1rem;align-items:start;position:relative}
+.steps .n{width:2.3rem;height:2.3rem;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-weight:500;font-size:.95rem;
+  background:#0b1729;border:2px solid var(--free);color:var(--ink);position:relative;z-index:1}
+.steps li:nth-child(3) .n,.steps li:nth-child(4) .n{border-color:var(--use)}
+.steps h3{margin:.25rem 0 .2rem}
+.steps p{color:var(--muted)}
+
+/* pillars */
+.pillars{display:grid;gap:.85rem;margin-bottom:1.5rem}
+.pillar{display:grid;grid-template-columns:6.4rem 1fr;gap:1rem;padding:.85rem 0 .9rem;border-top:1px solid var(--rule)}
+.pillar:last-child{border-bottom:1px solid var(--rule)}
+.ptag{font-family:var(--f-mono);font-size:.82rem;color:var(--free);padding-top:.2rem}
+.pillar.muni .ptag{color:var(--zone)}
+.pillar p{color:var(--muted);margin-top:.2rem;font-size:.97rem}
+.claim{margin:0;font-family:var(--f-display);font-size:1.6rem;line-height:1.15;letter-spacing:-.015em;font-weight:600;text-wrap:balance}
+
+/* zones */
+.zrows{display:grid}
+.zrow{display:grid;grid-template-columns:9.4rem 4.2rem 1fr;gap:.9rem;align-items:baseline;padding:.72rem 0;border-top:1px solid var(--rule)}
+.zrow:last-child{border-bottom:1px solid var(--rule)}
+.zrow h3{font-size:1.08rem}
+.zrow p{color:var(--muted);font-size:.93rem;line-height:1.35}
+.lvl{font-family:var(--f-mono);font-size:.78rem;border-radius:2rem;padding:.12rem .55rem;text-align:center;justify-self:start}
+.lvl.alta{background:rgba(212,224,255,.16);color:var(--ink);border:1px solid rgba(212,224,255,.5)}
+.lvl.media{border:1px dashed rgba(212,224,255,.45);color:var(--muted)}
+
+/* states */
+.states-l{list-style:none;margin:0 0 1.4rem;padding:0;display:grid;gap:.9rem}
+.states-l li{display:grid;grid-template-columns:1.6rem 1fr;gap:.6rem;align-items:start}
+.dot{width:.85rem;height:.85rem;border-radius:50%;margin-top:.32rem;display:inline-block;box-shadow:0 0 .6rem currentColor;background:currentColor}
+.c-free{color:var(--free)}.c-use{color:var(--use)}.c-low{color:var(--low)}.c-chg{color:var(--chg)}
+.states-l b{font-weight:600}
+.states-l span{color:var(--muted)}
+.footnote{border-left:2px solid var(--rule);padding-left:1rem;color:var(--muted);font-size:.9rem;display:grid;gap:.5rem}
+
+/* chart */
+.chart{width:100%;height:auto;display:block;margin:.4rem 0 .6rem;overflow:visible}
+.chart text{font-family:var(--f-mono);font-size:9px;fill:var(--faint)}
+.chart .pk{fill:var(--heat);opacity:.8}
+.now{font-family:var(--f-mono);font-size:.92rem;color:var(--muted);margin-bottom:1.4rem}
+.now b{color:var(--ink);font-weight:500}
+.key{background:rgba(255,92,168,.08);border:1px solid rgba(255,92,168,.32);border-radius:.7rem;padding:1rem 1.2rem}
+.key .kl{font-family:var(--f-mono);font-size:.8rem;color:var(--heat);display:block;margin-bottom:.3rem}
+.key p{font-family:var(--f-display);font-size:1.3rem;line-height:1.2;letter-spacing:-.01em;font-weight:600}
+
+/* SIPOC */
+.subt{font-family:var(--f-display);font-size:1.3rem;color:var(--free);margin:-.7rem 0 1.2rem;font-weight:400;letter-spacing:-.01em}
+.sipoc{display:grid}
+.srow{display:grid;grid-template-columns:2.4rem 6.8rem 1fr;gap:.6rem;align-items:center;padding:.62rem 0;border-top:1px solid var(--rule)}
+.srow:last-child{border-bottom:1px solid var(--rule)}
+.srow .L{font-family:var(--f-display);font-weight:800;font-size:1.7rem;color:var(--free);line-height:1}
+.srow .t{font-size:.86rem;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:.35rem}
+.chip{font-size:.88rem;padding:.2rem .6rem;border-radius:2rem;background:rgba(212,224,255,.08);border:1px solid rgba(212,224,255,.16);white-space:nowrap}
+.chip.hl{border-color:var(--free);color:var(--ink);background:rgba(53,224,194,.12)}
+.flow{display:flex;flex-wrap:wrap;gap:.25rem .2rem;align-items:center}
+.flow .chip{background:rgba(79,140,255,.16);border-color:rgba(79,140,255,.5)}
+.flow .chip.hl{border-color:var(--free);background:rgba(53,224,194,.14)}
+.flow i{font-style:normal;color:var(--faint);font-family:var(--f-mono);font-size:.8rem}
+.srow.p{background:linear-gradient(90deg,rgba(79,140,255,.08),transparent)}
+.sipoc-foot{margin-top:1rem;font-size:.92rem;color:var(--muted)}
+.sipoc-foot b{color:var(--free);font-weight:500}
+
+/* org bar */
+.orgbar{position:relative;margin:2.6rem 0 1rem}
+.orgbar .track{display:flex;height:2.6rem;border-radius:.5rem;overflow:hidden;border:1px solid var(--rule)}
+.orgbar .ops{width:45%;background:linear-gradient(90deg,rgba(255,143,58,.85),rgba(255,143,58,.55));display:flex;align-items:center;padding-left:.9rem;font-weight:600;color:#1a0d02}
+.orgbar .rest{flex:1;background:repeating-linear-gradient(135deg,rgba(212,224,255,.07) 0 8px,rgba(212,224,255,.12) 8px 16px);display:flex;align-items:center;padding-left:calc(5% + .9rem);color:var(--muted);font-size:.92rem}
+.orgbar .range{position:absolute;left:40%;width:10%;top:-1.3rem;height:calc(1.3rem + 2.6rem);border:1.5px solid var(--low);border-bottom:none;border-radius:.3rem .3rem 0 0;background:linear-gradient(rgba(255,143,58,0),rgba(255,143,58,.18));pointer-events:none}
+.orgbar .range span{position:absolute;bottom:100%;left:50%;transform:translate(-50%,-.15rem);font-family:var(--f-mono);font-size:.85rem;color:var(--low);white-space:nowrap}
+.orgbar .scale{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:.72rem;color:var(--faint);margin-top:.4rem}
+.ops-desc{margin:1.1rem 0 1.2rem;color:var(--muted)}
+.ops-desc b{color:var(--ink);font-weight:600}
+.rest-areas{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+
+/* benchmark */
+.cols{display:grid;gap:1.1rem}
+.blk h3{font-size:1.02rem;color:var(--muted);font-family:var(--f-text);font-weight:600;margin-bottom:.55rem;letter-spacing:0}
+.blist{list-style:none;margin:0;padding:0;display:grid;gap:.5rem}
+.blist li{padding-left:1.35rem;position:relative}
+.blist li::before{content:"";position:absolute;left:0;top:.55em;width:.55rem;height:.55rem;border-radius:2px;border:1.5px solid var(--low)}
+.blist.ok li::before{border:none;background:var(--free);border-radius:50%;box-shadow:0 0 .5rem var(--free)}
+.blist span{color:var(--muted)}
+.blk.us{padding-top:1rem;border-top:1px solid var(--rule)}
+.blk.us h3{color:var(--free)}
+
+/* ---------- Bottom bar ---------- */
+#bar{display:flex;align-items:center;gap:.9rem;height:4.4rem;border-top:1px solid var(--rule);flex:none}
+.nav{width:2.4rem;height:2.4rem;border-radius:50%;border:1px solid var(--rule);background:transparent;display:grid;place-items:center;cursor:pointer;flex:none;transition:border-color .2s,background .2s}
+.nav:hover{border-color:var(--free);background:rgba(53,224,194,.08)}
+.nav:disabled{opacity:.3;cursor:default;border-color:var(--rule);background:transparent}
+.nav svg{width:1rem;height:1rem}
+#prog{flex:1;display:flex;gap:.22rem;min-width:0}
+#prog button{flex:1;height:1.5rem;background:none;border:0;padding:0;cursor:pointer;position:relative}
+#prog button::before{content:"";position:absolute;left:0;right:0;top:50%;height:3px;margin-top:-1.5px;border-radius:2px;background:rgba(212,224,255,.16);transition:background .25s,height .2s}
+#prog button.done::before{background:rgba(53,224,194,.45)}
+#prog button.on::before{background:var(--free);height:5px;margin-top:-2.5px}
+#prog button:hover::before{background:rgba(53,224,194,.75)}
+#count{font-family:var(--f-mono);font-size:.9rem;color:var(--muted);flex:none;min-width:4.2em;text-align:right}
+#count b{color:var(--ink);font-weight:500}
+
+/* ---------- HUD & legend ---------- */
+.glass{background:rgba(7,13,25,.9);border:1px solid var(--rule);border-radius:.7rem}
+#hud{position:fixed;top:1.3rem;right:1.5rem;padding:.85rem 1.05rem .9rem;min-width:14.5rem;font-family:var(--f-mono);z-index:4}
+#hud .top{display:flex;justify-content:space-between;align-items:center;gap:1rem;font-size:.74rem;color:var(--muted)}
+#hud .tag{border:1px solid rgba(255,92,168,.5);color:var(--heat);border-radius:2rem;padding:.05rem .5rem}
+#hud .clock{font-size:2.3rem;font-weight:500;letter-spacing:-.03em;line-height:1.1;margin:.3rem 0 .45rem;color:var(--ink)}
+#hud .clock small{font-size:.8rem;color:var(--muted);letter-spacing:0;margin-left:.4rem;font-weight:400}
+#hud .kv{display:flex;justify-content:space-between;gap:1rem;font-size:.84rem;color:var(--muted);padding:.12rem 0}
+#hud .kv b{color:var(--ink);font-weight:500}
+#hud .st{list-style:none;padding:.5rem 0 0;margin:.45rem 0 0;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:.25rem .9rem;font-size:.8rem;color:var(--muted)}
+#hud .st li{display:flex;align-items:center;gap:.4rem}
+#hud .st b{margin-left:auto;color:var(--ink);font-weight:500}
+#hud .st i{width:.55rem;height:.55rem;border-radius:50%;background:currentColor;flex:none}
+#legend{position:fixed;right:1.5rem;bottom:1.3rem;padding:.6rem .85rem;font-family:var(--f-mono);font-size:.72rem;color:var(--muted);display:grid;grid-template-columns:auto auto;gap:.25rem 1.1rem;z-index:4}
+#legend span{display:flex;align-items:center;gap:.45rem;white-space:nowrap}
+#legend i{width:.55rem;height:.55rem;border-radius:50%;background:currentColor;flex:none}
+#legend .stn{width:.7rem;height:.7rem;border-radius:3px;border:1.5px solid var(--ink);background:#13233a}
+#legend .zn{width:.75rem;height:.55rem;border-radius:2px;border:1px solid rgba(212,224,255,.6);background:rgba(212,224,255,.12)}
+
+/* ---------- Speaker notes ---------- */
+#notes{position:fixed;left:calc(var(--pw) + 1.6rem);bottom:1.3rem;right:20rem;max-width:40rem;padding:1rem 1.2rem 1.05rem;z-index:6;
+  font-size:.98rem;line-height:1.45;display:none;background:rgba(7,13,25,.93)}
+#notes.on{display:block}
+#notes header{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:.74rem;color:var(--free);margin-bottom:.45rem}
+#notes header span:last-child{color:var(--faint)}
+#notes p+p{margin-top:.5rem}
+body.nopanel #notes{left:1.6rem}
+
+/* ---------- Mobile: panel abajo ---------- */
+@media (max-width:760px), (max-aspect-ratio:4/5){
+  html{font-size:14.5px}
+  :root{--ph:54vh}
+  #panel{top:auto;right:0;width:auto;height:var(--ph);padding:1.1rem 1.2rem 0;border-right:0;border-top:1px solid var(--rule);
+    background:linear-gradient(180deg,rgba(6,11,22,.9),rgba(6,11,22,.96))}
+  #panel::after{left:0;right:0;top:auto;bottom:100%;width:auto;height:2.5rem;background:linear-gradient(0deg,rgba(6,11,22,.5),rgba(6,11,22,0))}
+  body.nopanel #panel{transform:translateY(calc(100% + 3rem))}
+  .slide{justify-content:flex-start;overflow-y:auto;padding:.4rem 0 1rem;-webkit-overflow-scrolling:touch}
+  h2{font-size:1.75rem;margin-bottom:.9rem}
+  .lead{font-size:1rem}
+  .brand{font-size:4.4rem}
+  .cover .sub{font-size:1.35rem;margin-top:1rem}
+  .cover .meta{margin-top:1rem}
+  .cover .hint{display:none}
+  .thanks{font-size:4rem}
+  .ask{font-size:1.8rem}
+  .zrow{grid-template-columns:1fr auto;gap:.2rem .6rem}
+  .zrow p{grid-column:1 / -1}
+  .pillar{grid-template-columns:1fr;gap:.2rem}
+  .srow{grid-template-columns:2rem 1fr;gap:.2rem .6rem}
+  .srow .chips,.srow .flow{grid-column:2}
+  #bar{height:3.6rem}
+  #hud{top:.7rem;right:.7rem;min-width:0;padding:.55rem .7rem;font-size:12px}
+  #hud .clock{font-size:1.5rem}
+  #hud .kv{font-size:.72rem}
+  #hud .st,#hud .top span:last-child{display:none}
+  #hud .top{justify-content:flex-start}
+  #legend{display:none}
+  #notes{left:.7rem;right:.7rem;bottom:calc(var(--ph) + .7rem);max-width:none;font-size:.9rem}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .slide.active .rv{animation:none}
+  .slide,.slide.active{transition:none}
+  #panel{transition:none}
+}
+</style>
+</head>
+<body>
+<canvas id="map" aria-hidden="true"></canvas>
+
+<main id="panel" aria-live="polite">
+  <div class="slides" id="slides">
+
+    <!-- 1 -->
+    <section class="slide cover" data-title="Portada">
+      <h1 class="brand rv" aria-label="E-MOVE">E<span class="dash" aria-hidden="true"></span>MOVE</h1>
+      <p class="sub rv">Bicis y scooters eléctricos compartidos para moverse por Córdoba</p>
+      <p class="meta rv">TPI · UTN FRC</p>
+      <p class="hint rv">Avanzá con → o la barra espaciadora</p>
+      <div class="speaker"><p>Presentarse y presentar al equipo. Contar en una frase qué es E-Move: una flota de bicis y scooters eléctricos compartidos que se alquilan desde el celular.</p><p>Lo que se ve de fondo es una simulación de cómo operaría el servicio en Córdoba capital durante un día típico. La vamos a usar en todas las diapositivas.</p></div>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide" data-title="El problema">
+      <h2 class="rv">El problema: los viajes cortos</h2>
+      <div class="stat rv"><span class="num">2–5 km</span><span class="lbl">la distancia que hoy se resuelve mal en la ciudad</span></div>
+      <ul class="plist">
+        <li class="rv"><b>Auto o colectivo lleno</b><span>En hora pico, un viaje corto se hace en auto o en un colectivo que pasa completo.</span></li>
+        <li class="rv"><b>El último tramo</b><span>Desde la parada hasta el destino quedan cuadras a pie, sin otra alternativa.</span></li>
+        <li class="rv"><b>Más autos en el microcentro</b><span>Más tránsito y menos lugar para estacionar en las calles más angostas de la ciudad.</span></li>
+      </ul>
+      <div class="speaker"><p>La línea del mapa es el viaje típico de un estudiante: del Centro a Ciudad Universitaria, unos 3,5 km. Es corto para el auto y largo para caminar.</p><p>Remarcar el último tramo: aunque el colectivo te deje cerca, después quedan cuadras. Ahí entra un vehículo liviano y eléctrico.</p></div>
+    </section>
+
+    <!-- 3 -->
+    <section class="slide" data-title="La solución">
+      <h2 class="rv">La solución: un vehículo eléctrico a un toque</h2>
+      <ol class="steps">
+        <li class="rv"><span class="n">1</span><div><h3>Localizar en la app</h3><p>Abrís la app y ves las bicis y scooters libres cerca tuyo.</p></div></li>
+        <li class="rv"><span class="n">2</span><div><h3>Desbloquear con QR</h3><p>Escaneás el código del vehículo y queda liberado.</p></div></li>
+        <li class="rv"><span class="n">3</span><div><h3>Viajar</h3><p>Hacés tu recorrido dentro de las zonas de operación.</p></div></li>
+        <li class="rv"><span class="n">4</span><div><h3>Finalizar y pagar</h3><p>Estacionás dentro de la zona, cerrás el viaje y el cobro se hace solo.</p></div></li>
+      </ol>
+      <div class="speaker"><p>Acercamos la cámara a Nueva Córdoba, la zona con más estudiantes. Los puntos verde agua son vehículos libres esperando; los azules son viajes en curso.</p><p>Todo pasa en la app: no hay mostrador ni efectivo. El pago queda asociado a la cuenta del usuario.</p></div>
+    </section>
+
+    <!-- 4 -->
+    <section class="slide" data-title="Modelo de negocio">
+      <h2 class="rv">Modelo de negocio</h2>
+      <div class="pillars">
+        <div class="pillar rv"><span class="ptag">B2C</span><div><h3>Pago por uso</h3><p>Cada usuario paga solo el tiempo que usa el vehículo, desde la app.</p></div></div>
+        <div class="pillar rv"><span class="ptag">B2B2C</span><div><h3>Convenios corporativos</h3><p>Una empresa contrata viajes para sus empleados: la empresa paga y el empleado usa la app.</p></div></div>
+        <div class="pillar muni rv"><span class="ptag">Habilitación</span><div><h3>Licencia municipal</h3><p>No paga, pero habilita a operar. A cambio, E-Move asegura disponibilidad mínima, menor huella de carbono y control de unidades abandonadas.</p></div></div>
+      </div>
+      <blockquote class="claim rv">E-Move no vende vehículos: vende acceso temporal a una flota compartida.</blockquote>
+      <div class="speaker"><p>Dos fuentes de ingreso: el usuario que paga por uso y las empresas que contratan viajes para su gente.</p><p>La licencia municipal no trae plata, pero sin ella no se puede operar. Es un intercambio: el municipio habilita y E-Move se compromete a tener vehículos disponibles y a no dejar unidades tiradas.</p><p>Cerrar con la frase: el negocio es el acceso, no el vehículo.</p></div>
+    </section>
+
+    <!-- 5 -->
+    <section class="slide" data-title="Zonas de operación">
+      <h2 class="rv">Zonas de operación</h2>
+      <p class="lead rv">Arrancamos con cinco zonas acotadas, donde se concentran los viajes cortos.</p>
+      <div class="zrows">
+        <div class="zrow rv"><h3>Centro</h3><span class="lvl alta">Alta</span><p>Oficinas, comercio, trámites y trasbordo entre colectivos.</p></div>
+        <div class="zrow rv"><h3>Nueva Córdoba</h3><span class="lvl alta">Alta</span><p>El barrio con más estudiantes: departamentos, facultades y salidas.</p></div>
+        <div class="zrow rv"><h3>Ciudad Universitaria</h3><span class="lvl alta">Alta</span><p>UNC y UTN FRC: la entrada y salida de clases marcan los picos.</p></div>
+        <div class="zrow rv"><h3>Güemes</h3><span class="lvl media">Media</span><p>Gastronomía, ferias y bares: demanda de tarde y fin de semana.</p></div>
+        <div class="zrow rv"><h3>General Paz</h3><span class="lvl media">Media</span><p>Residencial y gastronómico, cruzando el río; conecta con el Centro.</p></div>
+      </div>
+      <div class="speaker"><p>Las zonas de borde lleno son de demanda alta; las de borde punteado, media.</p><p>Que sean acotadas es una decisión de costo: cuanto más chica el área, más barato es recargar y recuperar vehículos. General Paz queda cruzando el Suquía y sirve para probar demanda fuera del eje Centro–Universidad.</p></div>
+    </section>
+
+    <!-- 6 -->
+    <section class="slide" data-title="La operación en vivo">
+      <h2 class="rv">La operación en vivo</h2>
+      <p class="lead rv">Cada punto del mapa es un vehículo. El color indica su estado:</p>
+      <ul class="states-l">
+        <li class="rv"><i class="dot c-free"></i><div><b>Libre.</b> <span>Estacionado y disponible para alquilar.</span></div></li>
+        <li class="rv"><i class="dot c-use"></i><div><b>En uso.</b> <span>Un usuario está viajando.</span></div></li>
+        <li class="rv"><i class="dot c-low"></i><div><b>Batería baja.</b> <span>Bajó del 25 %: deja de alquilarse y va a la estación más cercana.</span></div></li>
+        <li class="rv"><i class="dot c-chg"></i><div><b>Cargando.</b> <span>Quieto en la estación; al completar la carga vuelve a estar libre.</span></div></li>
+      </ul>
+      <div class="footnote rv">
+        <p>La batería baja según los km recorridos. Hay una estación de carga por zona.</p>
+        <p>Las cifras de arriba a la derecha salen de esta simulación (<span id="fleetN">72</span> vehículos, un día de 7 a 23 h que se repite). No son datos reales de operación.</p>
+      </div>
+      <div class="speaker"><p>Señalar el panel de arriba a la derecha: hora simulada, viajes del día, kilómetros y cuántos vehículos hay en cada estado.</p><p>Mostrar alguno naranja yendo a una estación y los grises cargando alrededor de ella. Aclarar que es una simulación con reglas simples, no datos reales.</p></div>
+    </section>
+
+    <!-- 7 -->
+    <section class="slide" data-title="La demanda sigue al reloj">
+      <h2 class="rv">La demanda sigue al reloj</h2>
+      <p class="lead rv">Dos picos: de 8 a 10 h, ida a clases y al trabajo; de 17 a 20 h, la vuelta.</p>
+      <svg class="chart rv" id="chart" viewBox="0 0 340 122" role="img" aria-label="Demanda por hora, de 7 a 23 h, con picos de 8 a 10 y de 17 a 20"></svg>
+      <p class="now rv">Ahora <b id="nowH">--:--</b> · demanda <b id="nowD">--</b></p>
+      <div class="key rv"><span class="kl">Idea clave</span><p>Rebalancear la flota antes de cada pico: llevar vehículos cargados a donde va a estar la demanda, no a donde estuvo.</p></div>
+      <div class="speaker"><p>El mapa de calor rosa crece sobre las zonas cuando hay más viajes. A la mañana los viajes van hacia Ciudad Universitaria y el Centro; a la tarde vuelven hacia Nueva Córdoba y Güemes.</p><p>Si esperamos al pico para mover vehículos, llegamos tarde. Por eso el rebalanceo se planifica antes.</p></div>
+    </section>
+
+    <!-- 8 -->
+    <section class="slide" data-title="Proceso core (SIPOC)">
+      <h2 class="rv">Proceso core</h2>
+      <p class="subt rv">Gestionar el servicio de movilidad urbana</p>
+      <div class="sipoc">
+        <div class="srow rv"><span class="L">S</span><span class="t">Proveedores</span><div class="chips"><span class="chip">Fabricantes</span><span class="chip">Pasarela de pagos</span><span class="chip">Municipio</span></div></div>
+        <div class="srow rv"><span class="L">I</span><span class="t">Entradas</span><div class="chips"><span class="chip">Vehículos cargados</span><span class="chip">App y GPS</span><span class="chip hl">Solicitud del usuario</span></div></div>
+        <div class="srow p rv"><span class="L">P</span><span class="t">Proceso</span><div class="flow"><span class="chip hl">Reservar</span><i>›</i><span class="chip">Desbloquear</span><i>›</i><span class="chip">Viajar</span><i>›</i><span class="chip">Finalizar</span><i>›</i><span class="chip hl">Cobrar</span></div></div>
+        <div class="srow rv"><span class="L">O</span><span class="t">Salidas</span><div class="chips"><span class="chip">Viaje realizado</span><span class="chip hl">Cobro</span><span class="chip">Datos de uso</span></div></div>
+        <div class="srow rv"><span class="L">C</span><span class="t">Clientes</span><div class="chips"><span class="chip">Usuario final</span><span class="chip">Empresas con convenio</span></div></div>
+      </div>
+      <p class="sipoc-foot rv">Empieza con <b>la solicitud del usuario</b> y termina con <b>el cobro</b>.</p>
+      <div class="speaker"><p>Leer el SIPOC de arriba hacia abajo. El disparador es la solicitud del usuario desde la app; el proceso termina cuando se cobra el viaje.</p><p>Los datos de uso son una salida importante: alimentan la planificación del rebalanceo que vimos recién.</p></div>
+    </section>
+
+    <!-- 9 -->
+    <section class="slide" data-title="Estructura organizacional">
+      <h2 class="rv">Estructura organizacional</h2>
+      <p class="lead rv">En micromovilidad compartida, el área más grande no es la de tecnología: es la que trabaja en la calle.</p>
+      <div class="orgbar rv" role="img" aria-label="Operaciones y flota concentra entre el 40 y el 50 por ciento del personal">
+        <div class="range"><span>40–50 %</span></div>
+        <div class="track"><div class="ops">Operaciones y flota</div><div class="rest">Resto de las áreas</div></div>
+        <div class="scale"><span>0 %</span><span>50 %</span><span>100 %</span></div>
+      </div>
+      <p class="ops-desc rv"><b>Operaciones y flota</b> suele concentrar entre el 40 y el 50 % del personal del rubro: recarga, mantenimiento, rebalanceo y recuperación de unidades.</p>
+      <div class="rv"><span class="small">El resto se reparte en</span>
+        <div class="rest-areas"><span class="chip">Tecnología</span><span class="chip">Marketing</span><span class="chip">Legal y relación con el gobierno</span><span class="chip">Atención al cliente</span><span class="chip">Finanzas</span></div>
+      </div>
+      <div class="speaker"><p>En el mapa quedaron resaltados los vehículos naranja y gris: ese es el trabajo diario de Operaciones. Cada vehículo con batería baja es una tarea de alguien.</p><p>El 40 a 50 % es una referencia habitual del rubro, no la dotación propia de E-Move.</p></div>
+    </section>
+
+    <!-- 10 -->
+    <section class="slide" data-title="Benchmarking: Grin">
+      <h2 class="rv">Benchmarking: Grin en CABA</h2>
+      <p class="lead rv">Operó en Buenos Aires entre 2019 y 2020 con el mismo modelo de scooters compartidos. Lo que dejó:</p>
+      <div class="cols">
+        <div class="blk rv">
+          <ul class="blist">
+            <li>La recarga y el mantenimiento definen la rentabilidad.</li>
+            <li>Sin acuerdo municipal no hay operación.</li>
+            <li>Perder unidades cuesta caro.</li>
+          </ul>
+        </div>
+        <div class="blk us rv">
+          <h3>Qué hace distinto E-Move</h3>
+          <ul class="blist ok">
+            <li>Zonas acotadas <span>para recargar y recuperar más barato.</span></li>
+            <li>Estaciones de carga <span>propias, una por zona.</span></li>
+            <li>Convenio municipal <span>desde el inicio.</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="speaker"><p>Grin es el antecedente más cercano: mismo modelo, en Argentina. Su experiencia muestra que el problema no es la demanda sino el costo de operar la flota.</p><p>Cada diferencia de E-Move responde a una de esas lecciones: zonas y estaciones bajan el costo de recarga; el convenio asegura poder operar.</p></div>
+    </section>
+
+    <!-- 11 -->
+    <section class="slide cover" data-title="Cierre">
+      <h1 class="thanks rv">Gracias</h1>
+      <p class="ask rv">¿Preguntas?</p>
+      <p class="meta rv">E-MOVE · TPI · UTN FRC</p>
+      <div class="speaker"><p>Dejar la simulación corriendo de fondo durante las preguntas. Con H se oculta el panel y queda solo el mapa.</p></div>
+    </section>
+  </div>
+
+  <nav id="bar" aria-label="Navegación de diapositivas">
+    <button class="nav" id="prev" aria-label="Diapositiva anterior"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
+    <div id="prog"></div>
+    <span id="count"><b>01</b> / 11</span>
+    <button class="nav" id="next" aria-label="Diapositiva siguiente"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg></button>
+  </nav>
+</main>
+
+<aside id="hud" class="glass" aria-label="Indicadores de la simulación">
+  <div class="top"><span class="tag">Simulación</span><span>día típico</span></div>
+  <div class="clock" id="clock">07:00</div>
+  <div class="kv"><span>Viajes del día</span><b id="trips">0</b></div>
+  <div class="kv"><span>Km recorridos</span><b id="km">0</b></div>
+  <ul class="st">
+    <li class="c-free"><i></i><span>Libres</span><b id="n0">0</b></li>
+    <li class="c-use"><i></i><span>En uso</span><b id="n1">0</b></li>
+    <li class="c-low"><i></i><span>Bat. baja</span><b id="n2">0</b></li>
+    <li class="c-chg"><i></i><span>Cargando</span><b id="n3">0</b></li>
+  </ul>
+</aside>
+
+<aside id="legend" class="glass" aria-label="Referencias del mapa">
+  <span class="c-free"><i></i>Libre</span>
+  <span><i class="stn"></i>Estación de carga</span>
+  <span class="c-use"><i></i>En uso</span>
+  <span><i class="zn"></i>Zona de operación</span>
+  <span class="c-low"><i></i>Batería baja</span>
+  <span></span>
+  <span class="c-chg"><i></i>Cargando</span>
+</aside>
+
+<aside id="notes" class="glass" aria-live="polite">
+  <header><span id="notesT">Notas</span><span>N cierra · H panel · F pantalla completa</span></header>
+  <div id="notesB"></div>
+</aside>
+
+<script>
+(() => {
+'use strict';
+
+/* ================= Utilidades ================= */
+const RMQ = matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = RMQ.matches;
+if (RMQ.addEventListener) RMQ.addEventListener('change', e => { reduced = e.matches; });
+const $ = id => document.getElementById(id);
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const NF0 = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
+const pad = n => String(n).padStart(2, '0');
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+
+/* ================= Geografía (km, x = este, y = norte; origen ≈ Plaza San Martín) ================= */
+const G = 0.13;          // una cuadra
+const AV = 6;            // avenida cada 6 cuadras
+const B = { x0: -12, x1: 11, y0: -11.5, y1: 9 };
+const snap = v => Math.round(v / G) * G;
+const snapAv = v => Math.round(v / (G * AV)) * (G * AV);
+
+const ZONES = [
+  { name: 'Centro', level: 'alta', poly: [[-0.95,0.92],[0.45,1.0],[1.3,0.62],[1.22,-0.5],[0.6,-0.66],[-0.92,-0.55]], lab: [0.15, 0.2] },
+  { name: 'Nueva Córdoba', level: 'alta', poly: [[-0.82,-0.7],[0.6,-0.78],[1.08,-0.92],[1.04,-2.25],[0.2,-2.42],[-0.72,-2.2]], lab: [0.15, -1.55] },
+  { name: 'Güemes', level: 'media', poly: [[-2.35,-0.52],[-0.98,-0.62],[-0.86,-2.02],[-1.6,-2.25],[-2.4,-1.72]], lab: [-1.62, -1.35] },
+  { name: 'Ciudad Universitaria', level: 'alta', poly: [[-0.62,-2.62],[1.0,-2.56],[2.5,-2.78],[2.62,-3.92],[1.2,-4.42],[-0.52,-4.1]], lab: [1.0, -3.5] },
+  { name: 'General Paz', level: 'media', poly: [[2.28,0.48],[2.5,-0.08],[3.3,-0.28],[4.05,-0.22],[4.12,0.92],[3.2,1.42],[2.48,1.2]], lab: [3.25, 0.62] }
+];
+// estaciones (una por zona), sobre una intersección
+const STATIONS = ZONES.map(z => [z.lab[0] + 0.39, z.lab[1] - 0.39]).map(([x,y], i) => ({
+  x: snap(x), y: snap(y), zone: i, name: 'Estación ' + ZONES[i].name, slots: new Array(16).fill(-1)
+}));
+const RIVER = [[-12,2.3],[-8,1.8],[-5.2,1.55],[-3,1.36],[-1.6,1.26],[-0.4,1.2],[0.7,1.26],[1.42,1.06],[1.9,0.62],[2.2,0.02],[2.62,-0.36],[3.4,-0.52],[4.6,-0.42],[6,-0.62],[9,-0.5]];
+const PARK = [[1.24,-0.98],[2.25,-0.94],[2.68,-1.15],[2.72,-2.5],[1.95,-2.62],[1.26,-2.42]];
+const LAKE = { x: 1.95, y: -1.62, rx: 0.3, ry: 0.15 };
+
+// luces de edificios: puntos dentro de las manzanas, más densos cerca del centro
+// máscara que oscurece la ciudad hacia los bordes (se dibuja como imagen: más barato que un gradiente por cuadro)
+const FADE_R = 17;
+const FADE = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g2 = c.getContext('2d');
+  const g = g2.createRadialGradient(128, 128, 128 * 3.8 / FADE_R, 128, 128, 128 * 9.4 / FADE_R);
+  g.addColorStop(0, 'rgba(9,19,34,0)'); g.addColorStop(0.6, 'rgba(9,19,34,.62)'); g.addColorStop(1, 'rgba(9,19,34,1)');
+  g2.fillStyle = g; g2.fillRect(0, 0, 256, 256);
+  return c;
+})();
+const LIGHTS = (() => {
+  const out = [];
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let n = 0; n < 9000 && out.length < 7000; n++) {
+    const r = Math.sqrt(rnd()) * 10.5, a = rnd() * Math.PI * 2;
+    const x = 0.6 + Math.cos(a) * r * 1.15, y = -1.2 + Math.sin(a) * r * 0.9;
+    if (rnd() < r / 13) continue;
+    const bx = Math.floor(x / G) * G + G * (0.18 + rnd() * 0.64), by = Math.floor(y / G) * G + G * (0.18 + rnd() * 0.64);
+    out.push(bx, by);
+  }
+  return new Float32Array(out);
+})();
+for (const z of ZONES) {
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for (const [x,y] of z.poly) { x0=Math.min(x0,x); x1=Math.max(x1,x); y0=Math.min(y0,y); y1=Math.max(y1,y); }
+  z.bb = [x0,y0,x1,y1];
+  z.c = z.lab;
+  z.heat = 0;
+}
+function inPoly(x, y, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+function randInZone(zi) {
+  const z = ZONES[zi];
+  for (let k = 0; k < 60; k++) {
+    const x = snap(rand(z.bb[0], z.bb[2])), y = snap(rand(z.bb[1], z.bb[3]));
+    if (inPoly(x, y, z.poly)) return [x, y];
+  }
+  return [snap(z.c[0]), snap(z.c[1])];
+}
+
+/* ================= Demanda ================= */
+function demand(h) {
+  let d = 0.16
+    + 0.84 * Math.exp(-(((h - 9) / 1.0) ** 2))
+    + 0.80 * Math.exp(-(((h - 18.4) / 1.3) ** 2))
+    + 0.22 * Math.exp(-(((h - 13.3) / 1.1) ** 2));
+  if (h > 20.6) d *= 1 - 0.55 * Math.min(1, (h - 20.6) / 2.4);
+  return Math.min(1, d);
+}
+const W_MORNING = { o: [1.0, 1.35, 0.8, 0.55, 0.9], d: [1.45, 0.85, 0.4, 1.7, 0.5] };
+const W_EVENING = { o: [1.3, 1.0, 0.7, 1.55, 0.6], d: [1.0, 1.55, 1.15, 0.5, 0.9] };
+function weights(h, k) {
+  const m = smooth(11.5, 14.5, h);
+  return W_MORNING[k].map((v, i) => v * (1 - m) + W_EVENING[k][i] * m);
+}
+function pick(ws, exclude = -1) {
+  let s = 0; for (let i = 0; i < ws.length; i++) if (i !== exclude) s += ws[i];
+  let r = Math.random() * s;
+  for (let i = 0; i < ws.length; i++) { if (i === exclude) continue; r -= ws[i]; if (r <= 0) return i; }
+  return ws.length - 1;
+}
+
+/* ================= Simulación ================= */
+const FLEET = 72;
+const DAY = 16 * 60;            // minutos simulados (7:00–23:00)
+const SIM_PER_SEC = 2.0;        // minutos simulados por segundo real → un día ≈ 8 min
+const RATE = 2.0;               // viajes por minuto simulado con demanda = 1
+const DRAIN = 100 / 24;         // % de batería por km (autonomía ≈ 24 km)
+const LOW = 25;
+const CHARGE = 1.1;             // % por minuto simulado
+const TRAIL_N = 16, TRAIL_DT = 0.035;
+const S_FREE = 0, S_USE = 1, S_LOW = 2, S_CHG = 3;
+const RGB = [[53,224,194],[79,140,255],[255,143,58],[179,188,203]];
+
+const sim = { t: 0, trips: 0, km: 0, acc: 0, counts: [0,0,0,0] };
+const bikes = [];
+
+function route(sx, sy, tx, ty) {
+  const pts = [[sx, sy]];
+  const r = Math.random();
+  if (r < 0.45) {
+    pts.push(Math.random() < 0.5 ? [tx, sy] : [sx, ty]);
+  } else {
+    const useAv = Math.random() < 0.55;
+    if (Math.random() < 0.5) {
+      let mx = sx + (tx - sx) * rand(0.25, 0.75);
+      mx = useAv ? snapAv(mx) : snap(mx);
+      pts.push([mx, sy], [mx, ty]);
+    } else {
+      let my = sy + (ty - sy) * rand(0.25, 0.75);
+      my = useAv ? snapAv(my) : snap(my);
+      pts.push([sx, my], [tx, my]);
+    }
+  }
+  pts.push([tx, ty]);
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    const p = out[out.length - 1];
+    if (Math.abs(pts[i][0] - p[0]) + Math.abs(pts[i][1] - p[1]) > 1e-6) out.push(pts[i]);
+  }
+  return out;
+}
+
+function makeBike(zi) {
+  const [x, y] = randInZone(zi);
+  const b = { x, y, st: S_FREE, bat: rand(28, 100), zone: zi, dz: zi, path: null, pi: 0, speed: 0.25,
+    station: -1, slot: -1, tx: new Float32Array(TRAIL_N), ty: new Float32Array(TRAIL_N) };
+  b.tx.fill(x); b.ty.fill(y);
+  return b;
+}
+function initFleet() {
+  const per = [18, 18, 11, 14, 11];
+  per.forEach((n, zi) => { for (let k = 0; k < n; k++) bikes.push(makeBike(zi)); });
+  // algunos arrancan cargando
+  for (let k = 0; k < 6; k++) { const b = bikes[k * 11 + 3]; b.bat = rand(30, 55); toStation(b, nearestStation(b.x, b.y)); arriveStation(b); }
+}
+function nearestStation(x, y) {
+  let best = 0, bd = 1e9;
+  STATIONS.forEach((s, i) => { const d = Math.abs(s.x - x) + Math.abs(s.y - y); if (d < bd) { bd = d; best = i; } });
+  return best;
+}
+function toStation(b, si) {
+  const s = STATIONS[si];
+  b.st = S_LOW; b.station = si;
+  b.path = route(b.x, b.y, s.x, s.y); b.pi = 1; b.speed = rand(0.22, 0.27);
+}
+function arriveStation(b) {
+  const s = STATIONS[b.station];
+  b.st = S_CHG; b.x = s.x; b.y = s.y; b.path = null;
+  let slot = s.slots.indexOf(-1); if (slot < 0) slot = Math.floor(Math.random() * s.slots.length);
+  s.slots[slot] = 1; b.slot = slot;
+}
+function startTrip(h) {
+  const wo = weights(h, 'o');
+  let oz = pick(wo), b = null;
+  for (let tries = 0; tries < 3 && !b; tries++) {
+    const cand = [];
+    for (const k of bikes) if (k.st === S_FREE && k.zone === oz) cand.push(k);
+    if (cand.length) b = cand[Math.floor(Math.random() * cand.length)];
+    else oz = pick(wo);
+  }
+  if (!b) {
+    const cand = bikes.filter(k => k.st === S_FREE);
+    if (!cand.length) return;
+    b = cand[Math.floor(Math.random() * cand.length)]; oz = b.zone;
+  }
+  const dz = Math.random() < 0.28 ? oz : pick(weights(h, 'd'), oz);
+  let t = randInZone(dz);
+  if (Math.abs(t[0] - b.x) + Math.abs(t[1] - b.y) < 0.5) t = randInZone(dz);
+  b.path = route(b.x, b.y, t[0], t[1]); b.pi = 1;
+  b.st = S_USE; b.dz = dz; b.speed = rand(0.22, 0.29);
+  ZONES[oz].heat += 1;
+}
+function finishTrip(b) {
+  sim.trips++;
+  b.zone = b.dz; ZONES[b.dz].heat += 1;
+  if (b.bat < LOW) toStation(b, nearestStation(b.x, b.y));
+  else { b.st = S_FREE; b.path = null; }
+}
+function moveBike(b, dist) {
+  while (dist > 0 && b.path && b.pi < b.path.length) {
+    const [px, py] = b.path[b.pi];
+    const dx = px - b.x, dy = py - b.y, d = Math.abs(dx) + Math.abs(dy);
+    if (d <= dist) {
+      b.x = px; b.y = py; dist -= d; b.pi++;
+      if (b.st === S_USE) { sim.km += d; } b.bat -= d * DRAIN;
+    } else {
+      const f = dist / d; b.x += dx * f; b.y += dy * f;
+      if (b.st === S_USE) { sim.km += dist; } b.bat -= dist * DRAIN; dist = 0;
+    }
+  }
+  if (b.bat < 3) b.bat = 3;
+  if (b.path && b.pi >= b.path.length) {
+    if (b.st === S_USE) finishTrip(b);
+    else if (b.st === S_LOW) arriveStation(b);
+  }
+}
+function release(b) {
+  const s = STATIONS[b.station];
+  s.slots[b.slot] = -1;
+  // queda libre en una esquina cercana a la estación
+  const ang = (b.slot / s.slots.length) * Math.PI * 2;
+  b.x = snap(s.x + Math.cos(ang) * 0.2); b.y = snap(s.y + Math.sin(ang) * 0.2);
+  b.st = S_FREE; b.zone = s.zone; b.station = -1; b.slot = -1; b.bat = 100;
+}
+function step(dt) { // dt en minutos simulados
+  sim.t += dt;
+  if (sim.t >= DAY) { sim.t -= DAY; sim.trips = 0; sim.km = 0; }
+  const h = 7 + sim.t / 60;
+  sim.acc += RATE * demand(h) * dt;
+  while (sim.acc >= 1) { sim.acc -= 1; startTrip(h); }
+  const c = sim.counts; c[0] = c[1] = c[2] = c[3] = 0;
+  for (const b of bikes) {
+    if (b.st === S_USE || b.st === S_LOW) moveBike(b, b.speed * dt);
+    else if (b.st === S_CHG) { b.bat += CHARGE * dt; if (b.bat >= 100) release(b); }
+    c[b.st]++;
+  }
+  const dec = Math.exp(-dt / 24);
+  for (const z of ZONES) z.heat *= dec;
+}
+
+initFleet();
+sim.t = 0;
+for (let k = 0; k < 180; k++) step(0.25);   // calienta la simulación hasta las 7:45
+for (const b of bikes) { b.tx.fill(b.x); b.ty.fill(b.y); }
+
+/* ================= Diapositivas: cámara y capas ================= */
+// cam: centro (km) y span (km que entran en el área visible)
+const SL = [
+  { cam: [0.6, -1.2, 8.2], drift: 1, zoneA: .45, labels: .55, stn: 0, bike: 1, heat: 0, route: 0, ops: 0 },
+  { cam: [0.4, -1.55, 6.2], zoneA: .35, labels: 0, stn: 0, bike: .22, heat: 0, route: 1, ops: 0 },
+  { cam: [0.3, -1.45, 3.8], zoneA: .55, labels: .8, stn: .4, bike: 1, heat: 0, route: 0, ops: 0 },
+  { cam: [0.5, -0.6, 6.6], zoneA: .45, labels: .5, stn: 0, bike: 1, heat: 0, route: 0, ops: 0 },
+  { cam: [0.75, -1.5, 7.6], zoneA: 1, labels: 1, stn: 0, bike: .45, heat: 0, route: 0, ops: 0, zlev: 1 },
+  { cam: [0.8, -1.2, 7.4], zoneA: .55, labels: .45, stn: 1, bike: 1, heat: 0, route: 0, ops: 0 },
+  { cam: [0.75, -1.5, 7.8], zoneA: .6, labels: .8, stn: 0, bike: .55, heat: 1, route: 0, ops: 0 },
+  { cam: [0.5, -1.1, 9], zoneA: .4, labels: .35, stn: 0, bike: .8, heat: 0, route: 0, ops: 0 },
+  { cam: [0.75, -1.3, 7.6], zoneA: .45, labels: .4, stn: 1, bike: 1, heat: 0, route: 0, ops: 1 },
+  { cam: [0.75, -1.4, 8.4], zoneA: .85, labels: .8, stn: 1, bike: .8, heat: 0, route: 0, ops: 0 },
+  { cam: [0.6, -1.2, 8.2], drift: 1, zoneA: .45, labels: .55, stn: 0, bike: 1, heat: 0, route: 0, ops: 0 }
+];
+// viaje típico: Centro → Ciudad Universitaria ≈ 3,5 km por la cuadrícula
+const TRIP = [[0, 0.0], [0, -2.0], [0.65, -2.0], [0.65, -2.85]];
+
+const fx = { zoneA: .45, labels: .55, stn: 0, heat: 0, route: 0, zlev: 0, sa: [1,1,1,1] };
+let cur = 0;
+
+/* ================= Canvas ================= */
+const cv = $('map');
+const ctxMain = cv.getContext('2d', { alpha: false });
+let ctx = ctxMain;
+// capa base (calles, río, luces) cacheada mientras la cámara está quieta
+const baseCv = document.createElement('canvas');
+const baseCtx = baseCv.getContext('2d', { alpha: false });
+let baseKey = '', bx0 = 0, by0 = 0;
+const BM = 80; // margen de la capa base (px) para la deriva lenta de la cámara
+let W = 0, H = 0, DPR = 1, DPR_MAX = 2, REM = 16;
+let vignette = null;
+const panel = $('panel');
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, DPR_MAX);
+  W = innerWidth; H = innerHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  baseCv.width = Math.round((W + 2 * BM) * DPR); baseCv.height = Math.round((H + 2 * BM) * DPR); baseKey = '';
+  REM = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  vignette = document.createElement('canvas');
+  vignette.width = Math.max(1, Math.round(W / 2)); vignette.height = Math.max(1, Math.round(H / 2));
+  const vc = vignette.getContext('2d');
+  const g = vc.createRadialGradient(vignette.width * .62, vignette.height * .45, Math.min(W, H) * .2, vignette.width * .62, vignette.height * .45, Math.max(W, H) * .62);
+  g.addColorStop(0, 'rgba(4,8,16,0)'); g.addColorStop(1, 'rgba(4,8,16,.72)');
+  vc.fillStyle = g; vc.fillRect(0, 0, vignette.width, vignette.height);
+}
+const mobileQ = matchMedia('(max-width:760px), (max-aspect-ratio:4/5)');
+// área del mapa que queda libre; con ref = true ignora si el panel está oculto (para mantener el zoom)
+function viewport(ref) {
+  const hidden = !ref && document.body.classList.contains('nopanel');
+  if (mobileQ.matches) {
+    if (hidden) return { x: 0, y: 0, w: W, h: H };
+    return { x: 0, y: 0, w: W, h: Math.max(120, H - panel.offsetHeight) };
+  }
+  const hud = $('hud').getBoundingClientRect();
+  const rm = Math.max(0, W - hud.left + 0.5 * REM);
+  if (hidden) return { x: 0, y: 0, w: W - rm, h: H };
+  const pw = panel.offsetWidth;
+  return { x: pw, y: 0, w: Math.max(200, W - pw - rm), h: H };
+}
+const cam = { x: 0, y: 0, s: 80 }, vpc = { x: 0, y: 0 };
+let camInit = false, clockT = 0;
+function camTarget() {
+  const c = SL[cur].cam, vp = viewport(false), ref = viewport(true);
+  let [x, y, span] = c;
+  if (SL[cur].drift && !reduced) {
+    x += 0.5 * Math.sin(clockT * 0.07); y += 0.3 * Math.cos(clockT * 0.053);
+  }
+  const s = Math.min(ref.w, ref.h * 1.25) / span;
+  return { x, y, s, vx: vp.x + vp.w / 2, vy: vp.y + vp.h / 2 };
+}
+
+/* ---- dibujo ---- */
+let ox = 0, oy = 0, S = 1;
+const sx = x => ox + x * S, sy = y => oy - y * S;
+function worldTf() { ctx.setTransform(DPR * S, 0, 0, -DPR * S, DPR * ox, DPR * oy); }
+function screenTf() { ctx.setTransform(DPR, 0, 0, DPR, 0, 0); }
+function polyPath(poly) { ctx.beginPath(); ctx.moveTo(poly[0][0], poly[0][1]); for (let i = 1; i < poly.length; i++) ctx.lineTo(poly[i][0], poly[i][1]); ctx.closePath(); }
+
+function drawBase() {
+  screenTf();
+  ctx.fillStyle = '#091322'; ctx.fillRect(0, 0, W, H);
+  worldTf();
+  const px = 1 / S;
+  const wx0 = Math.max(B.x0, -ox / S), wx1 = Math.min(B.x1, (W - ox) / S);
+  const wy0 = Math.max(B.y0, (oy - H) / S), wy1 = Math.min(B.y1, oy / S);
+  // ciudad (manzanas) un poco más clara que el fondo
+  ctx.fillStyle = '#0c182b';
+  ctx.fillRect(B.x0, B.y0, B.x1 - B.x0, B.y1 - B.y0);
+  // parque
+  polyPath(PARK); ctx.fillStyle = '#0f2a26'; ctx.fill();
+  ctx.beginPath(); ctx.ellipse(LAKE.x, LAKE.y, LAKE.rx, LAKE.ry, 0.2, 0, Math.PI * 2); ctx.fillStyle = '#0e3346'; ctx.fill();
+  // calles
+  const bpx = G * S;
+  const minorA = clamp((bpx - 3.5) / 6, 0, 1);
+  if (minorA > 0) {
+    ctx.beginPath();
+    for (let i = Math.ceil(wx0 / G); i <= Math.floor(wx1 / G); i++) { if (((i % AV) + AV) % AV) { ctx.moveTo(i * G, wy0); ctx.lineTo(i * G, wy1); } }
+    for (let j = Math.ceil(wy0 / G); j <= Math.floor(wy1 / G); j++) { if (((j % AV) + AV) % AV) { ctx.moveTo(wx0, j * G); ctx.lineTo(wx1, j * G); } }
+    ctx.strokeStyle = `rgba(118,148,200,${0.13 * minorA})`; ctx.lineWidth = px; ctx.stroke();
+  }
+  // río
+  ctx.beginPath(); ctx.moveTo(RIVER[0][0], RIVER[0][1]);
+  for (let i = 1; i < RIVER.length; i++) ctx.lineTo(RIVER[i][0], RIVER[i][1]);
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.strokeStyle = '#0d3043'; ctx.lineWidth = Math.max(0.12, 5 * px); ctx.stroke();
+  ctx.strokeStyle = 'rgba(80,190,225,.32)'; ctx.lineWidth = 1.2 * px; ctx.stroke();
+  // avenidas (cruzan el río como puentes)
+  const A = G * AV;
+  ctx.beginPath();
+  for (let i = Math.ceil(wx0 / A); i <= Math.floor(wx1 / A); i++) { ctx.moveTo(i * A, wy0); ctx.lineTo(i * A, wy1); }
+  for (let j = Math.ceil(wy0 / A); j <= Math.floor(wy1 / A); j++) { ctx.moveTo(wx0, j * A); ctx.lineTo(wx1, j * A); }
+  ctx.lineCap = 'butt';
+  ctx.strokeStyle = 'rgba(90,130,210,.05)'; ctx.lineWidth = 7 * px; ctx.stroke();
+  ctx.strokeStyle = 'rgba(150,182,235,.2)'; ctx.lineWidth = 1.5 * px; ctx.stroke();
+  // luces de la ciudad
+  ctx.beginPath();
+  const lw = 1.5 * px;
+  for (let i = 0; i < LIGHTS.length; i += 2) {
+    const x = LIGHTS[i], y = LIGHTS[i + 1];
+    if (x < wx0 || x > wx1 || y < wy0 || y > wy1) continue;
+    ctx.rect(x, y, lw, lw);
+  }
+  ctx.fillStyle = 'rgba(255,238,205,.2)'; ctx.fill();
+  // la ciudad se desvanece hacia los bordes
+  ctx.drawImage(FADE, 0.6 - FADE_R, -1.2 - FADE_R, FADE_R * 2, FADE_R * 2);
+  // borde del parque por encima de las calles
+  polyPath(PARK); ctx.fillStyle = 'rgba(15,42,38,.86)'; ctx.fill();
+  ctx.strokeStyle = 'rgba(80,170,130,.25)'; ctx.lineWidth = px; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(LAKE.x, LAKE.y, LAKE.rx, LAKE.ry, 0.2, 0, Math.PI * 2); ctx.fillStyle = '#0e3346'; ctx.fill();
+}
+
+function drawZones(t) {
+  worldTf();
+  const px = 1 / S, a = fx.zoneA;
+  for (const z of ZONES) {
+    polyPath(z.poly);
+    const alta = z.level === 'alta';
+    ctx.fillStyle = `rgba(212,224,255,${(alta ? 0.075 : 0.05) * a + 0.012})`; ctx.fill();
+    ctx.setLineDash(alta ? [] : [6 * px, 5 * px]);
+    ctx.strokeStyle = `rgba(212,224,255,${0.12 + 0.5 * a})`; ctx.lineWidth = (1 + 0.6 * a) * px; ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  // mapa de calor
+  if (fx.heat > 0.01) {
+    ctx.globalCompositeOperation = 'lighter';
+    for (const z of ZONES) {
+      const v = 1 - Math.exp(-z.heat / 16);
+      const r = 0.55 + 1.15 * v;
+      ctx.save(); polyPath(z.poly); ctx.clip();
+      const g = ctx.createRadialGradient(z.c[0], z.c[1], 0, z.c[0], z.c[1], r);
+      g.addColorStop(0, `rgba(255,92,168,${fx.heat * (0.12 + 0.55 * v)})`);
+      g.addColorStop(0.55, `rgba(255,92,168,${fx.heat * (0.05 + 0.22 * v)})`);
+      g.addColorStop(1, 'rgba(255,92,168,0)');
+      ctx.fillStyle = g; ctx.fillRect(z.bb[0] - 1, z.bb[1] - 1, z.bb[2] - z.bb[0] + 2, z.bb[3] - z.bb[1] + 2);
+      ctx.restore();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+}
+
+function drawRoute(t) {
+  if (fx.route < 0.01) return;
+  worldTf();
+  const px = 1 / S;
+  ctx.beginPath(); ctx.moveTo(TRIP[0][0], TRIP[0][1]);
+  for (let i = 1; i < TRIP.length; i++) ctx.lineTo(TRIP[i][0], TRIP[i][1]);
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = `rgba(233,238,247,${0.12 * fx.route})`; ctx.lineWidth = 9 * px; ctx.setLineDash([]); ctx.stroke();
+  ctx.setLineDash([7 * px, 7 * px]);
+  ctx.lineDashOffset = reduced ? 0 : -(t * 22) * px;
+  ctx.strokeStyle = `rgba(255,255,255,${0.95 * fx.route})`; ctx.lineWidth = 2.6 * px; ctx.stroke();
+  ctx.setLineDash([]); ctx.lineDashOffset = 0;
+  screenTf();
+  for (const [i, p] of [[0, TRIP[0]], [1, TRIP[TRIP.length - 1]]]) {
+    const x = sx(p[0]), y = sy(p[1]);
+    ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fillStyle = `rgba(9,19,34,${fx.route})`; ctx.fill();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = `rgba(255,255,255,${fx.route})`; ctx.stroke();
+    ctx.font = `500 ${Math.round(REM * 0.78)}px 'IBM Plex Mono', ui-monospace, monospace`;
+    ctx.fillStyle = `rgba(233,238,247,${0.9 * fx.route})`;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(i === 0 ? 'Centro' : 'Ciudad Universitaria', x + 14, y);
+  }
+  // etiqueta
+  const txt = '≈ 3,5 km · viaje típico de un estudiante';
+  ctx.font = `500 ${Math.round(REM * (W < 600 ? 0.74 : 0.9))}px 'IBM Plex Mono', ui-monospace, monospace`;
+  const tw = ctx.measureText(txt).width, ph = REM * 0.7, bh = REM * 2.1;
+  const lx = Math.min(sx(TRIP[1][0]) + 16, W - tw - ph * 2 - 10), ly = sy(-1.15);
+  ctx.fillStyle = `rgba(7,13,25,${0.88 * fx.route})`;
+  roundRect(lx, ly - bh / 2, tw + ph * 2, bh, 8); ctx.fill();
+  ctx.strokeStyle = `rgba(255,255,255,${0.35 * fx.route})`; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = `rgba(255,255,255,${fx.route})`;
+  ctx.fillText(txt, lx + ph, ly + 1);
+}
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+
+function bikePos(b) {
+  if (b.st === S_CHG) {
+    const s = STATIONS[b.station];
+    const ring = b.slot < 8 ? 0 : 1, k = b.slot % 8;
+    const ang = (k / 8) * Math.PI * 2 + ring * 0.39 - Math.PI / 2;
+    const r = 13 + ring * 7;
+    return [sx(s.x) + Math.cos(ang) * r, sy(s.y) + Math.sin(ang) * r];
+  }
+  return [sx(b.x), sy(b.y)];
+}
+
+function drawTrails() {
+  worldTf();
+  const px = 1 / S;
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  for (const st of [S_USE, S_LOW, S_FREE]) {
+    const a0 = fx.sa[st];
+    if (a0 < 0.02) continue;
+    const [r, g, bl] = RGB[st];
+    for (let k = 0; k < TRAIL_N - 1; k++) {
+      ctx.beginPath();
+      let any = false;
+      for (const b of bikes) {
+        if (b.st !== st) continue;
+        const x0 = b.tx[k], y0 = b.ty[k], x1 = b.tx[k + 1], y1 = b.ty[k + 1];
+        if (x0 === x1 && y0 === y1) continue;
+        ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); any = true;
+      }
+      if (!any) continue;
+      const f = 1 - k / (TRAIL_N - 1);
+      ctx.strokeStyle = `rgba(${r},${g},${bl},${0.7 * f * f * a0})`;
+      ctx.lineWidth = (1 + 2.4 * f) * px;
+      ctx.stroke();
+    }
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function drawStations(t) {
+  screenTf();
+  const e = fx.stn;
+  const sz = 7 + 3 * e;
+  for (const s of STATIONS) {
+    const x = sx(s.x), y = sy(s.y);
+    if (x < -40 || x > W + 40 || y < -40 || y > H + 40) continue;
+    if (e > 0.02 && !reduced) {
+      const ph = (t * 0.5 + s.zone * 0.2) % 1;
+      ctx.beginPath(); ctx.arc(x, y, sz + 4 + ph * 22, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(233,238,247,${0.35 * (1 - ph) * e})`; ctx.lineWidth = 1.2; ctx.stroke();
+    }
+    ctx.fillStyle = '#13233a';
+    roundRect(x - sz, y - sz, sz * 2, sz * 2, 3.5); ctx.fill();
+    ctx.strokeStyle = `rgba(233,238,247,${0.55 + 0.45 * e})`; ctx.lineWidth = 1.5; ctx.stroke();
+    // rayo
+    const k = sz / 10;
+    ctx.beginPath();
+    ctx.moveTo(x + 1.5 * k, y - 6.5 * k); ctx.lineTo(x - 3.5 * k, y + 1 * k); ctx.lineTo(x - 0.2 * k, y + 1 * k);
+    ctx.lineTo(x - 1.5 * k, y + 6.5 * k); ctx.lineTo(x + 3.5 * k, y - 1 * k); ctx.lineTo(x + 0.2 * k, y - 1 * k); ctx.closePath();
+    ctx.fillStyle = `rgba(255,214,102,${0.75 + 0.25 * e})`; ctx.fill();
+  }
+}
+
+function drawBikes(t) {
+  screenTf();
+  ctx.globalCompositeOperation = 'lighter';
+  for (let st = 0; st < 4; st++) {
+    const a = fx.sa[st]; if (a < 0.02) continue;
+    const [r, g, bl] = RGB[st];
+    ctx.beginPath();
+    for (const b of bikes) { if (b.st !== st) continue; const [x, y] = bikePos(b); ctx.moveTo(x + 7, y); ctx.arc(x, y, 7, 0, Math.PI * 2); }
+    ctx.fillStyle = `rgba(${r},${g},${bl},${(st === S_CHG ? 0.14 : 0.17) * a})`; ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  for (let st = 0; st < 4; st++) {
+    const a = fx.sa[st]; if (a < 0.02) continue;
+    const [r, g, bl] = RGB[st];
+    ctx.beginPath();
+    const rad = st === S_USE || st === S_LOW ? 3.1 : 2.7;
+    for (const b of bikes) { if (b.st !== st) continue; const [x, y] = bikePos(b); ctx.moveTo(x + rad, y); ctx.arc(x, y, rad, 0, Math.PI * 2); }
+    ctx.fillStyle = `rgba(${r},${g},${bl},${a})`; ctx.fill();
+  }
+}
+
+function label(txt, x, y, size, alpha, opts = {}) {
+  ctx.font = `${opts.w || 500} ${size}px ${opts.f || "'IBM Plex Mono', ui-monospace, monospace"}`;
+  ctx.textAlign = opts.align || 'center'; ctx.textBaseline = 'middle';
+  if (opts.halo) { ctx.lineWidth = 4; ctx.strokeStyle = `rgba(9,19,34,${0.85 * alpha})`; ctx.strokeText(txt, x, y); }
+  ctx.fillStyle = opts.color ? opts.color(alpha) : `rgba(233,238,247,${alpha})`;
+  ctx.fillText(txt, x, y);
+}
+function drawLabels() {
+  screenTf();
+  ctx.lineJoin = 'round';
+  // río y parque
+  const rp = RIVER[5], rq = RIVER[4];
+  const ang = Math.atan2(-(rp[1] - rq[1]), rp[0] - rq[0]);
+  ctx.save(); ctx.translate(sx(-1.0), sy(1.23) - 11); ctx.rotate(ang);
+  label('Río Suquía', 0, 0, Math.round(REM * 0.66), 0.55, { color: a => `rgba(120,200,230,${a})`, w: 400 });
+  ctx.restore();
+  label('Parque Sarmiento', sx(1.98), sy(-2.15), Math.round(REM * 0.62), 0.5, { color: a => `rgba(120,200,160,${a})`, w: 400 });
+  // zonas
+  const la = fx.labels;
+  if (la > 0.02) {
+    const big = Math.round(REM * (0.72 + 0.16 * fx.zlev));
+    for (const z of ZONES) {
+      const x = sx(z.c[0]), y = sy(z.c[1]);
+      label(z.name, x, y - (fx.zlev > 0.02 ? 8 * fx.zlev : 0), big, 0.85 * la, { halo: true, w: 500 });
+      if (fx.zlev > 0.02) {
+        label('demanda ' + z.level, x, y + 12 * fx.zlev, Math.round(REM * 0.62), 0.7 * la * fx.zlev,
+          { halo: true, w: 400, color: a => z.level === 'alta' ? `rgba(53,224,194,${a})` : `rgba(151,166,191,${a})` });
+      }
+    }
+  }
+  // estaciones
+  if (fx.stn > 0.02) {
+    for (const s of STATIONS) {
+      const x = sx(s.x), y = sy(s.y);
+      label(s.name, x, y + 34, Math.round(REM * 0.6), 0.85 * fx.stn, { halo: true, w: 400, color: a => `rgba(255,214,102,${a})` });
+    }
+  }
+}
+
+/* ================= HUD ================= */
+const elClock = $('clock'), elTrips = $('trips'), elKm = $('km'), elN = [0,1,2,3].map(i => $('n' + i));
+const elNowH = $('nowH'), elNowD = $('nowD');
+let lastMin = -1, hudAcc = 0;
+function hourStr(tm) { const m = Math.floor(tm) + 7 * 60; return pad(Math.floor(m / 60)) + ':' + pad(m % 60); }
+function updateHud(force) {
+  const m = Math.floor(sim.t);
+  if (m !== lastMin || force) {
+    lastMin = m;
+    const hs = hourStr(sim.t);
+    elClock.textContent = hs;
+    const d = demand(7 + sim.t / 60);
+    elNowH.textContent = hs;
+    elNowD.textContent = d > 0.7 ? 'alta' : d > 0.4 ? 'media' : 'baja';
+    updateChartMarker();
+  }
+  elTrips.textContent = NF0.format(sim.trips);
+  elKm.textContent = NF0.format(sim.km);
+  for (let i = 0; i < 4; i++) elN[i].textContent = sim.counts[i];
+}
+
+/* ================= Gráfico de demanda ================= */
+const chart = $('chart');
+const CX0 = 26, CX1 = 332, CY0 = 14, CY1 = 98;
+const cxh = h => CX0 + (h - 7) / 16 * (CX1 - CX0), cyd = d => CY1 - d * (CY1 - CY0);
+let marker = null;
+(function buildChart() {
+  const NS = 'http://www.w3.org/2000/svg';
+  let pts = '';
+  for (let h = 7; h <= 23.001; h += 0.1) pts += `${cxh(h).toFixed(1)},${cyd(demand(h)).toFixed(1)} `;
+  const area = `M${cxh(7)},${CY1} L${pts.trim().split(' ').join(' L')} L${cxh(23)},${CY1} Z`;
+  let ticks = '';
+  for (const h of [7, 9, 11, 13, 15, 17, 19, 21, 23]) ticks += `<text x="${cxh(h)}" y="${CY1 + 14}" text-anchor="middle">${h}</text><line x1="${cxh(h)}" x2="${cxh(h)}" y1="${CY1}" y2="${CY1 + 3}" stroke="rgba(150,178,220,.35)"/>`;
+  chart.innerHTML = `
+    <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff5ca8" stop-opacity=".45"/><stop offset="1" stop-color="#ff5ca8" stop-opacity="0"/></linearGradient></defs>
+    <rect x="${cxh(8)}" y="${CY0 - 6}" width="${cxh(10) - cxh(8)}" height="${CY1 - CY0 + 6}" fill="rgba(255,92,168,.09)"/>
+    <rect x="${cxh(17)}" y="${CY0 - 6}" width="${cxh(20) - cxh(17)}" height="${CY1 - CY0 + 6}" fill="rgba(255,92,168,.09)"/>
+    <text class="pk" x="${(cxh(8) + cxh(10)) / 2}" y="${CY0 - 9}" text-anchor="middle">pico 8–10 h</text>
+    <text class="pk" x="${(cxh(17) + cxh(20)) / 2}" y="${CY0 - 9}" text-anchor="middle">pico 17–20 h</text>
+    <line x1="${CX0}" x2="${CX1}" y1="${CY1}" y2="${CY1}" stroke="rgba(150,178,220,.35)"/>
+    <path d="${area}" fill="url(#ga)"/>
+    <polyline points="${pts}" fill="none" stroke="#ff5ca8" stroke-width="2" stroke-linejoin="round"/>
+    ${ticks}
+    <text x="${CX0 - 4}" y="${CY0 + 3}" text-anchor="end">+</text>
+    <text x="${CX0 - 4}" y="${CY1}" text-anchor="end">−</text>
+    <g id="mk"><line y1="${CY0 - 4}" y2="${CY1}" stroke="#e9eef7" stroke-width="1" stroke-dasharray="2 2"/><circle r="4.2" fill="#091322" stroke="#e9eef7" stroke-width="2"/></g>`;
+  marker = chart.querySelector('#mk');
+})();
+function updateChartMarker() {
+  if (!marker) return;
+  const h = 7 + sim.t / 60;
+  const x = cxh(h), y = cyd(demand(h));
+  marker.setAttribute('transform', `translate(${x.toFixed(1)},0)`);
+  marker.querySelector('circle').setAttribute('cy', y.toFixed(1));
+}
+
+/* ================= Navegación ================= */
+const slides = [...document.querySelectorAll('.slide')];
+const N = slides.length;
+const prog = $('prog'), count = $('count'), prevB = $('prev'), nextB = $('next');
+const notes = $('notes'), notesB = $('notesB'), notesT = $('notesT');
+$('fleetN').textContent = FLEET;
+slides.forEach((s, i) => {
+  [...s.querySelectorAll('.rv')].forEach((el, k) => el.style.setProperty('--i', k));
+  const b = document.createElement('button');
+  b.setAttribute('aria-label', `Ir a la diapositiva ${i + 1}: ${s.dataset.title}`);
+  b.title = `${pad(i + 1)} · ${s.dataset.title}`;
+  b.addEventListener('click', () => go(i));
+  prog.appendChild(b);
+});
+const segs = [...prog.children];
+function go(i) {
+  i = clamp(i, 0, N - 1);
+  slides[cur].classList.remove('active');
+  cur = i;
+  void slides[cur].offsetWidth;
+  slides[cur].classList.add('active');
+  slides[cur].scrollTop = 0;
+  segs.forEach((b, k) => { b.classList.toggle('on', k === cur); b.classList.toggle('done', k < cur); if (k === cur) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
+  count.innerHTML = `<b>${pad(cur + 1)}</b> / ${pad(N)}`;
+  prevB.disabled = cur === 0; nextB.disabled = cur === N - 1;
+  const sp = slides[cur].querySelector('.speaker');
+  notesB.innerHTML = sp ? sp.innerHTML : '';
+  notesT.textContent = `Notas · ${pad(cur + 1)} ${slides[cur].dataset.title}`;
+  try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) {}
+  if (cur === 6) updateChartMarker();
+  if (reduced) snapCamera();
+}
+const next = () => go(cur + 1), prev = () => go(cur - 1);
+prevB.addEventListener('click', prev); nextB.addEventListener('click', next);
+
+function toggleFull() {
+  const d = document;
+  if (!d.fullscreenElement && !d.webkitFullscreenElement) {
+    const el = d.documentElement; (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el);
+  } else (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+}
+addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key;
+  if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Spacebar', 'Enter'].includes(k)) {
+    if (k === 'Enter' && e.target.closest && e.target.closest('button')) return;
+    e.preventDefault(); next();
+  } else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); prev(); }
+  else if (k === 'Home') { e.preventDefault(); go(0); }
+  else if (k === 'End') { e.preventDefault(); go(N - 1); }
+  else if (k === 'h' || k === 'H') document.body.classList.toggle('nopanel');
+  else if (k === 'n' || k === 'N') notes.classList.toggle('on');
+  else if (k === 'f' || k === 'F') toggleFull();
+  else if (k === 'Escape') notes.classList.remove('on');
+});
+// swipe
+let tStart = null;
+addEventListener('touchstart', e => { const t = e.changedTouches[0]; tStart = { x: t.clientX, y: t.clientY, at: performance.now() }; }, { passive: true });
+addEventListener('touchend', e => {
+  if (!tStart) return;
+  const t = e.changedTouches[0], dx = t.clientX - tStart.x, dy = t.clientY - tStart.y;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3 && performance.now() - tStart.at < 800) { dx < 0 ? next() : prev(); }
+  tStart = null;
+}, { passive: true });
+
+/* ================= Bucle ================= */
+function snapCamera() {
+  const tg = camTarget();
+  cam.x = tg.x; cam.y = tg.y; cam.s = tg.s; vpc.x = tg.vx; vpc.y = tg.vy;
+}
+function ease(cur, tgt, k) { return cur + (tgt - cur) * k; }
+let last = performance.now(), trailAcc = 0, slowFrames = 0, frames = 0;
+function frame(now) {
+  let dt = (now - last) / 1000; last = now;
+  if (dt > 0.1) dt = 0.1;
+  clockT += dt;
+  // rendimiento: si va lento con pantalla de alta densidad, bajar resolución
+  frames++;
+  if (dt > 0.024) slowFrames++;
+  if (frames === 150) { if (slowFrames > 60 && DPR > 1) { DPR_MAX = 1; resize(); } frames = 0; slowFrames = 0; }
+
+  step(dt * SIM_PER_SEC);
+  trailAcc += dt;
+  if (trailAcc >= TRAIL_DT) {
+    trailAcc = 0;
+    for (const b of bikes) {
+      b.tx.copyWithin(1, 0, TRAIL_N - 1); b.ty.copyWithin(1, 0, TRAIL_N - 1);
+      b.tx[0] = b.x; b.ty[0] = b.y;
+    }
+  } else {
+    for (const b of bikes) { b.tx[0] = b.x; b.ty[0] = b.y; }
+  }
+
+  // cámara y capas
+  const tg = camTarget();
+  if (!camInit || reduced) { snapCamera(); camInit = true; }
+  else {
+    const k = 1 - Math.exp(-dt * 2.1);
+    cam.x = ease(cam.x, tg.x, k); cam.y = ease(cam.y, tg.y, k);
+    cam.s = Math.exp(ease(Math.log(cam.s), Math.log(tg.s), k));
+    vpc.x = ease(vpc.x, tg.vx, k); vpc.y = ease(vpc.y, tg.vy, k);
+    const err = Math.abs(cam.x - tg.x) * cam.s + Math.abs(cam.y - tg.y) * cam.s + Math.abs(cam.s / tg.s - 1) * W + Math.abs(vpc.x - tg.vx) + Math.abs(vpc.y - tg.vy);
+    if (err < 0.6) snapCamera();
+  }
+  const L = SL[cur], kf = reduced ? 1 : 1 - Math.exp(-dt * 3.2);
+  fx.zoneA = ease(fx.zoneA, L.zoneA, kf); fx.labels = ease(fx.labels, L.labels, kf);
+  fx.stn = ease(fx.stn, L.stn, kf); fx.heat = ease(fx.heat, L.heat, kf);
+  fx.route = ease(fx.route, L.route, kf); fx.zlev = ease(fx.zlev, L.zlev || 0, kf);
+  const sa = L.ops ? [0.22, 0.22, 1, 1] : [L.bike, L.bike, L.bike, L.bike];
+  for (let i = 0; i < 4; i++) fx.sa[i] = ease(fx.sa[i], sa[i], kf);
+
+  S = cam.s; ox = vpc.x - cam.x * S; oy = vpc.y + cam.y * S;
+
+  const key = `${S.toFixed(4)}|${cv.width}x${cv.height}`;
+  if (key !== baseKey || Math.abs(ox - bx0) > BM - 4 || Math.abs(oy - by0) > BM - 4) {
+    const sv = [W, H, ox, oy];
+    W += 2 * BM; H += 2 * BM; ox += BM; oy += BM;
+    ctx = baseCtx; drawBase();
+    screenTf(); if (vignette) ctx.drawImage(vignette, BM, BM, sv[0], sv[1]);
+    ctx = ctxMain;
+    [W, H, ox, oy] = sv; bx0 = ox; by0 = oy; baseKey = key;
+  }
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(baseCv, (ox - bx0 - BM) * DPR, (oy - by0 - BM) * DPR);
+  drawZones(clockT);
+  drawRoute(clockT);
+  drawTrails();
+  drawStations(clockT);
+  drawBikes(clockT);
+  drawLabels();
+
+  hudAcc += dt;
+  if (hudAcc > 0.15) { hudAcc = 0; updateHud(); }
+  requestAnimationFrame(frame);
+}
+
+resize();
+addEventListener('resize', resize);
+const h0 = parseInt((location.hash || '').slice(1), 10);
+go(Number.isFinite(h0) ? h0 - 1 : 0);
+addEventListener('hashchange', () => { const h = parseInt((location.hash || '').slice(1), 10); if (Number.isFinite(h) && h - 1 !== cur) go(h - 1); });
+updateHud(true);
+requestAnimationFrame(t => { last = t; frame(t); });
+
+// para pruebas
+window.__emove = { sim, bikes, go, get cur() { return cur; } };
+})();
+</script>
+</body>
+</html>
