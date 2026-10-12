@@ -44,11 +44,14 @@ which rtk
 ## 2. Hook global (tu máquina, todos los proyectos)
 
 ```bash
-rtk init -g
+rtk init -g --auto-patch
 ```
 
-Pregunta `Patch existing ~/.claude/settings.json? [y/N]` → **respondé `y`**. Después
-reiniciá Claude Code. Eso deja registrado:
+`--auto-patch` escribe el hook en `~/.claude/settings.json` sin preguntar y deja un
+backup en `settings.json.bak`. Sin ese flag, `rtk init -g` pregunta
+`Patch existing ~/.claude/settings.json? [y/N]` y hay que responder `y`; si corre sin
+terminal interactiva toma `N` y no escribe nada. Después reiniciá Claude Code. Eso
+deja registrado:
 
 ```json
 {
@@ -73,6 +76,24 @@ touch ~/.claude/settings.json
 jq '.hooks.PreToolUse += [{"matcher":"Bash","hooks":[{"type":"command","command":"rtk hook claude"}]}]' \
   ~/.claude/settings.json > ~/.claude/settings.json.tmp && mv ~/.claude/settings.json.tmp ~/.claude/settings.json
 jq -e '.hooks.PreToolUse[].hooks[].command' ~/.claude/settings.json   # validar
+```
+
+**Cuidado con el comando exacto.** rtk solo se reconoce a sí mismo si el hook es
+literalmente `rtk hook claude`. Si lo envolvés (por ejemplo
+`command -v rtk >/dev/null 2>&1 && rtk hook claude || exit 0`), el hook **funciona
+igual**, pero `rtk init --show` y `rtk gain` siguen avisando `No hook installed`. Para
+el hook global conviene el comando pelado; la versión envuelta tiene sentido en el hook
+del repositorio, donde no sabés si la otra máquina tiene rtk.
+
+Y si registrás el tuyo a mano y después corrés `rtk init -g --auto-patch`, quedan **dos**
+entradas `PreToolUse` con matcher `Bash`. No rompe nada (rtk es idempotente: si el
+comando ya empieza con `rtk`, no lo vuelve a reescribir), pero corre dos veces por
+comando. Para quedarte solo con la canónica:
+
+```bash
+jq '.hooks.PreToolUse |= [.[] | select(.hooks[0].command == "rtk hook claude")]' \
+  ~/.claude/settings.json > ~/.claude/settings.json.tmp && mv ~/.claude/settings.json.tmp ~/.claude/settings.json
+rtk init --show     # Hook: rtk hook claude (native binary command)
 ```
 
 Comprobar que quedó activo: reiniciá Claude Code y corré `git status`. Si el hook
@@ -143,6 +164,7 @@ máquina donde rtk ya está instalado alcanza.
 ## 4. Ver cuánto ahorra
 
 ```bash
+rtk init --show       # estado del hook, RTK.md y settings.json
 rtk gain              # resumen e historial por comando
 rtk cc-economics      # gasto (ccusage) contra ahorro de rtk
 rtk discover          # comandos del historial donde rtk hubiera ahorrado
