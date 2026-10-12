@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v rtk >/dev/null 2>&1; then exit 0; fi; RTK_VERSION=v0.49.0 curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh >/dev/null 2>&1; command -v rtk >/dev/null 2>&1 || echo '{\"systemMessage\":\"rtk quedo en ~/.local/bin pero no esta en PATH: el filtrado de salida queda inactivo.\"}'; exit 0",
+            "timeout": 120,
+            "statusMessage": "Instalando rtk si falta..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v rtk >/dev/null 2>&1 && rtk hook claude || exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}
