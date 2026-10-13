@@ -1,35 +1,42 @@
 # E-MOVE · TPI UTN FRC
 
-Presentación del Trabajo Práctico Integrador de **E-MOVE**, una startup (ficticia) de
-bicis y scooters eléctricos compartidos en Córdoba capital.
+Presentación del Trabajo Práctico Integrador de **Gestión de la Mejora de Procesos**
+(UTN FRC, Ingeniería en Sistemas de Información, 2026) sobre **E-MOVE**, una startup
+(ficticia) de micromovilidad eléctrica compartida, y su proceso **«Gestionar el servicio
+de movilidad urbana»**.
 
 ## Archivos
 
 | Archivo | Qué es |
 |---|---|
-| `emove-presentacion.html` | La presentación para exponer en vivo. Un solo archivo (HTML + CSS + JS), sin backend ni build: se abre con doble clic. Fondo: simulación animada de la operación sobre un mapa estilizado de Córdoba. |
-| `contexto-emove.md` | Contexto completo del proyecto: pedido original, cómo está construido el HTML, geografía y parámetros de la simulación, controles y verificación hecha. |
-| `analisis-presenton.md` | Análisis del repositorio [Presenton](https://github.com/presenton/presenton) para sacar una versión PPTX/PDF de entrega: cómo funciona, qué plantilla usar y qué limitaciones tiene. |
-| `presenton/emove-payload.json` | Cuerpo listo de `POST /api/v1/ppt/presentation/generate`: las 11 diapositivas en markdown, con notas del orador e instrucciones de estilo. |
-| `presenton/generar-pptx.sh` | Levanta Presenton en Docker y genera el PPTX con ese payload. |
-| `presenton/layouts-sugeridos.json` | Mapeo propuesto de cada diapositiva a un diseño de la plantilla `dynamic`. |
+| `presentacion-emove.html` | **La presentación (v2).** Un solo archivo (HTML + CSS + JS), sin backend ni build: se abre con doble clic y funciona sin internet (solo usa Google Fonts si hay conexión). Tema claro, mapa de Córdoba estilo Google Maps dibujado con código, BPMN redibujado en SVG, 21 diapositivas + 5 anexos, 19 minutos planificados. |
+| `FUENTES.md` | Cada número visible, en qué diapositiva aparece y de qué sección del contexto sale. |
+| `PENDIENTES.md` | Decisiones ante ambigüedades, propuestas de recorte de tiempo y de palabras, y qué probar en el aula. |
+| `CONTEXTO_E-MOVE.md` | Base de conocimiento del caso: única fuente de contenido (A = caso de la cátedra, B = Miro del equipo). |
+| `PROMPT_presentacion_E-MOVE.md` | El pedido de la v2 (estructura, diseño, verificación). |
+| `referencias/bpmn.png` | Diagrama BPMN del Miro (referencia del redibujo). |
+| `emove-presentacion.html` · `contexto-emove.md` | Versión 1 (tema oscuro) y su documentación técnica. Su contenido quedó reemplazado por la v2. |
+| `analisis-presenton.md` · `presenton/` | Análisis de [Presenton](https://github.com/presenton/presenton) y un payload para generar un PPTX. **El payload está armado con el contenido de la v1** (incluye datos que no están en el caso, como el benchmarking con Grin): no usarlo sin actualizarlo. |
+| `rtk-setup.md` | Cómo dejar instalado el hook de rtk (ahorro de tokens en Claude Code). |
 
 ## Cómo exponer
 
-Abrir `emove-presentacion.html` en el navegador y poner pantalla completa (tecla `F`).
+Abrir `presentacion-emove.html` en Chrome o Edge y poner pantalla completa (`F`).
 
-- **Avanzar / retroceder**: flechas, barra espaciadora, PageUp/PageDown (sirve con
-  presentador inalámbrico), o swipe en celular.
-- **`H`**: oculta el panel de texto y deja solo el mapa.
-- **`N`**: muestra las notas del orador de la diapositiva actual.
-- **`F`**: pantalla completa. **`Esc`**: cierra las notas.
+| Tecla | Acción |
+|---|---|
+| → ↓ Espacio PageDown Enter | Siguiente paso (los fragmentos se revelan antes de pasar de diapositiva) |
+| ← ↑ PageUp Backspace | Paso anterior |
+| Home · End | Portada · cierre |
+| `H` | Oculta el panel: queda solo el mapa |
+| `N` | Notas del orador con cronómetro (transcurrido, tiempo de la diapositiva, desvío) |
+| `P` | Vista del orador en otra ventana (actual + próxima + notas + cronómetro), sincronizada |
+| `O` | Vista general en grilla |
+| `F` | Pantalla completa |
+| `R` | Reinicia el cronómetro |
+| `Esc` | Cierra notas y vista general |
 
-## Cómo generar el PPTX de entrega
+La URL guarda diapositiva y paso (`#9.2`). En celular se navega con swipe.
 
-Requiere Docker y una clave de un proveedor de IA (Presenton siempre necesita un
-modelo). Ver `analisis-presenton.md` para el detalle.
-
-```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
-./presenton/generar-pptx.sh
-```
+Integrantes, duración y textos de portada se editan al principio del archivo, en
+`window.EMOVE_CONFIG`.
